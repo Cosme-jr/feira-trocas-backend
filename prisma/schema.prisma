@@ -1,6 +1,8 @@
+// schema.prisma
+
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  output   = "../generated/prisma" // Confirmação do caminho de saída
 }
 
 datasource db {
@@ -9,42 +11,43 @@ datasource db {
 }
 
 model Usuario {
-  id              String     @id @default(uuid())
-  nome            String
-  email           String     @unique
-  senha           String
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  itens           Item[]
-  propostasFeitas Proposta[] @relation("PropostaOfertante")
+  id                String     @id @default(uuid())
+  nome              String
+  email             String     @unique
+  senha             String
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  itens             Item[] // Usuarios podem ter muitos itens.
+  propostasFeitas  Proposta[] @relation("PropostaOfertante") // Propostas que o usuário fez
+  propostasRecebidas Proposta[] @relation("PropostaDonoItemDesejado") // Propostas para itens desejados do usuário
 }
 
 model Item {
-  id                  String   @id @default(uuid())
-  usuarioId           String
-  nome                String
-  descricao           String?
-  categoria           String
-  imagemUrl           String?
-  disponivelParaTroca Boolean  @default(true)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  usuario            Usuario    @relation(fields: [usuarioId], references: [id])
-  propostasOfertadas Proposta[] @relation("ItemOfertado")
-  propostasDesejadas Proposta[] @relation("ItemDesejado")
+  id                   String     @id @default(uuid())
+  usuarioId            String
+  nome                 String
+  descricao            String?    // Descrição pode ser opcional
+  categoria            String
+  imagemUrl            String?    // URL da imagem pode ser opcional
+  disponivelParaTroca  Boolean    @default(true)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  usuario              Usuario    @relation(fields: [usuarioId], references: [id])
+  propostasOfertadas   Proposta[] @relation("ItemOfertado") // Este item foi ofertado em propostas
+  propostasDesejadas   Proposta[] @relation("ItemDesejado") // Este item foi desejado em propostas
 }
 
 model Proposta {
-  id             String   @id @default(uuid())
-  itemOfertadoId String
-  itemDesejadoId String
-  ofertanteId    String
-  status         String   @default("pendente")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(uuid())
+  itemOfertadoId  String
+  itemDesejadoId  String
+  ofertanteId     String
+  status          String   @default("pendente")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  itemOfertado Item    @relation("ItemOfertado", fields: [itemOfertadoId], references: [id])
-  itemDesejado Item    @relation("ItemDesejado", fields: [itemDesejadoId], references: [id])
-  ofertante    Usuario @relation("PropostaOfertante", fields: [ofertanteId], references: [id])
+  itemOfertado    Item     @relation("ItemOfertado", fields: [itemOfertadoId], references: [id])
+  itemDesejado    Item     @relation("ItemDesejado", fields: [itemDesejadoId], references: [id])
+  ofertante       Usuario  @relation("PropostaOfertante", fields: [ofertanteId], references: [id])
+  donoItemDesejado Usuario @relation("PropostaDonoItemDesejado", fields: [itemDesejadoId], references: [id], map: "fk_proposta_dono_item_desejado")
 }
