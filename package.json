@@ -2,6 +2,7 @@
   "name": "feira-trocas-backend",
   "version": "1.0.0",
   "main": "src/app.js",
+  "type": "module",
   "scripts": {
     "start": "nodemon src/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -13,8 +14,10 @@
   "dependencies": {
     "@prisma/client": "^6.10.1",
     "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^4.x.x"
+    "express": "^4.x.x",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "prisma": "^6.10.1"

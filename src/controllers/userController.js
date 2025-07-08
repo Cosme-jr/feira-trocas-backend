@@ -1,29 +1,24 @@
 // src/controllers/userController.js
 
-// Importa a instância única do PrismaClient exportada de app.js
-// O caminho '../app' significa:
-// 'voltar uma pasta' (de 'controllers' para 'src')
-// e então acessar o arquivo 'app.js'
-const prisma = require('../db');
-const bcrypt = require('bcryptjs'); // <--- ESTA LINHA É CRUCIAL 
+import prisma from '../db.js'; // Importa a instância do Prisma do seu db.js
+import bcrypt from 'bcryptjs'; // Importa a biblioteca para hash de senhas
 
 const userController = {
   // Função para criar um novo usuário
   async createUser(req, res) {
+    console.log('Requisição para criar usuário recebida!');
+    console.log('Corpo da requisição:', req.body);
+
     // Extrai os dados do corpo da requisição
-    const { nome, email, senha } = req.body;
+    const { nome, email, senha, isAdmin } = req.body; // Adicionado isAdmin para permitir cadastro
 
     // --- Validação básica de entrada ---
     if (!nome || !email || !senha) {
-      // Retorna erro 400 Bad Request se algum campo obrigatório estiver faltando
       return res.status(400).json({ error: 'Todos os campos (nome, email, senha) são obrigatórios.' });
     }
-    // TODO: Considerar adicionar validação mais robusta (ex: formato de email, complexidade da senha)
-
+    
     try {
       // 1. Hash da senha antes de salvar no banco de dados
-      // '10' é o número de rounds de salt, que define a complexidade do hash.
-      // Quanto maior, mais seguro, mas mais lento para computar.
       const hashedPassword = await bcrypt.hash(senha, 10);
 
       // 2. Cria o usuário no banco de dados usando o Prisma
@@ -31,26 +26,29 @@ const userController = {
         data: {
           nome,
           email,
-          senha: hashedPassword, // Salva a senha hasheada, não a senha em texto puro
+          senha: hashedPassword, // Salva a senha hasheada
+          isAdmin: isAdmin || false, // Define isAdmin. Se não for fornecido, será false por padrão
         },
         select: { // Seleciona apenas os campos que devem ser retornados na resposta (NUNCA a senha)
           id: true,
           nome: true,
           email: true,
-          createdAt: true, // <-- VÍRGULA CORRIGIDA AQUI
+          isAdmin: true, // Inclui o campo isAdmin na resposta
+          createdAt: true,
           updatedAt: true,
         },
       });
+      console.log('Usuário criado com sucesso:', newUser);
       // Retorna o novo usuário com status 201 Created
       res.status(201).json(newUser);
     } catch (error) {
       // Tratamento de erros específicos do Prisma
       if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-        // Erro P2002 indica violação de constraint UNIQUE (email já existe)
+        console.error('Erro ao criar usuário: Email já cadastrado.', error);
         return res.status(409).json({ error: 'Email já cadastrado.' }); // 409 Conflict
       }
       // Loga o erro completo no console do servidor para depuração
-      console.error('Erro ao criar usuário:', error); // Corrigi "Error" para "Erro" e adicionei ':' para consistência
+      console.error('Erro ao criar usuário:', error);
       // Retorna erro 500 Internal Server Error para erros não esperados
       res.status(500).json({ error: 'Erro interno do servidor.' });
     }
@@ -64,6 +62,7 @@ const userController = {
           id: true,
           nome: true,
           email: true,
+          isAdmin: true, // Inclui o campo isAdmin
           createdAt: true,
           updatedAt: true,
         },
@@ -86,6 +85,7 @@ const userController = {
           id: true,
           nome: true,
           email: true,
+          isAdmin: true, // Inclui o campo isAdmin
           createdAt: true,
           updatedAt: true,
           itens: { // Inclui os itens que este usuário possui
@@ -101,7 +101,6 @@ const userController = {
       });
 
       if (!user) {
-        // Retorna 404 Not Found se o usuário não for encontrado
         return res.status(404).json({ error: 'Usuário não encontrado.' });
       }
       res.status(200).json(user);
@@ -114,13 +113,17 @@ const userController = {
   // Função para atualizar um usuário existente
   async updateUser(req, res) {
     const { id } = req.params;
-    const { nome, email, senha } = req.body;
+    const { nome, email, senha, isAdmin } = req.body; // Adicionado isAdmin para permitir atualização
 
     try {
       let dataToUpdate = { nome, email };
       // Se uma nova senha for fornecida no corpo da requisição, faz o hash dela
       if (senha) {
         dataToUpdate.senha = await bcrypt.hash(senha, 10);
+      }
+      // Permite atualizar o status isAdmin
+      if (typeof isAdmin === 'boolean') {
+        dataToUpdate.isAdmin = isAdmin;
       }
 
       const updatedUser = await prisma.usuario.update({
@@ -130,6 +133,7 @@ const userController = {
           id: true,
           nome: true,
           email: true,
+          isAdmin: true, // Inclui o campo isAdmin
           createdAt: true,
           updatedAt: true,
         },
@@ -139,7 +143,7 @@ const userController = {
       if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
         return res.status(409).json({ error: 'Email já cadastrado.' });
       }
-      if (error.code === 'P2025') { // Erro P2025 indica que o registro a ser atualizado não foi encontrado
+      if (error.code === 'P2025') {
         return res.status(404).json({ error: 'Usuário não encontrado para atualizar.' });
       }
       console.error('Erro ao atualizar usuário:', error);
@@ -158,10 +162,10 @@ const userController = {
       // Retorna 204 No Content para exclusão bem-sucedida (sem corpo na resposta)
       res.status(204).send();
     } catch (error) {
-      if (error.code === 'P2025') { // Erro P2025 indica que o registro a ser deletado não foi encontrado
+      if (error.code === 'P2025') {
         return res.status(404).json({ error: 'Usuário não encontrado para deletar.' });
       }
-      if (error.code === 'P2003') { // Erro P2003 indica falha de Foreign Key (usuário tem itens/propostas associadas)
+      if (error.code === 'P2003') {
         return res.status(409).json({ error: 'Não é possível deletar o usuário porque ele possui itens ou propostas associadas. Delete primeiro os itens/propostas relacionados.' });
       }
       console.error('Erro ao deletar usuário:', error);
@@ -170,4 +174,4 @@ const userController = {
   },
 };
 
-module.exports = userController;
+export default userController;

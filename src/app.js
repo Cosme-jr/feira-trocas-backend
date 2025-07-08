@@ -1,46 +1,24 @@
-// src/app.js
+// src/app.js (Será server.js no futuro, mas por enquanto mantenha o nome atual)
 
-require('dotenv').config(); // Carrega as variáveis de ambiente do .env
-const express = require('express');
-const prisma = require('./db'); // <--- AGORA IMPORTA DE src/db.js
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors'; // Importe o CORS
+import { routes } from './routes/index.js'; // Importe as rotas centralizadas
 
 const app = express();
-const PORT = process.env.PORT || 8080; // Define a porta, padrão 8080
+const PORT = process.env.PORT || 8080;
 
-// Middleware para parsear JSON no corpo das requisições
+app.use(cors()); // Use o middleware CORS
 app.use(express.json());
 
-// Rota de teste na raiz.
-app.get('/', (req, res) => {
-  res.send('Bem-vindo à API da Feira de Trocas Comunitária!');
-});
+// Use as rotas centralizadas
+app.use(routes); // Não precisa de prefixo aqui se as rotas já tiverem seus próprios prefixos definidos internamente
 
-// *************** LINHAS PARA AS ROTAS DE USUÁRIO ***************
+// Remova esta rota de teste se não for mais necessária
+// app.get('/', (req, res) => {
+//   res.send('Bem-vindo à API da Feira de Trocas Comunitária!');
+// });
 
-// Importe as rotas de usuário.
-const userRoutes = require('./routes/userRoutes');
-
-// Use as rotas da API.
-app.use('/api/users', userRoutes);
-
-// ***************************************************************
-
-// Inicia o servidor
 app.listen(PORT, () => {
   console.log(`Servidor rodando em: http://localhost:${PORT}`);
 });
-
-// O hook de desconexão foi movido para src/db.js,
-// mas você pode manter um aqui se quiser que o app.js também participe,
-// mas não é estritamente necessário para o Prisma em si.
-// Para simplicidade, vamos removê-lo daqui.
-/*
-process.on('beforeExit', async () => {
-  console.log('Desconectando Prisma...');
-  await prisma.$disconnect();
-  console.log('Prisma desconectado.');
-});
-*/
-
-// O Prisma NÃO é mais exportado de app.js
-// module.exports = prisma; // <--- REMOVA OU COMENTE ESTA LINHA!
