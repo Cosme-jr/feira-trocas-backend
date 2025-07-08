@@ -27,14 +27,14 @@ routes.post('/login', authController.login);
 routes.post('/users', userController.createUser);
 routes.get('/users', authentication, userController.getAllUsers);
 routes.get('/users/:id', authentication, userController.getUserById);
-routes.put('/users/:id', authentication, userController.updateUser); // <-- CORRIGIDO: routes.put
-routes.delete('/users/:id', authentication, authorization, userController.deleteUser); // <-- CORRIGIDO: routes.delete
+routes.put('/users/:id', authentication, userController.updateUser);
+routes.delete('/users/:id', authentication, authorization, userController.deleteUser);
 
 // Rotas de Item
-routes.use('/items', authentication, itemRoutes); // <-- CORRIGIDO: routes.use e authentication para as rotas de item
+routes.use('/items', authentication, itemRoutes);
 
 // Rotas de Proposta
-routes.use('/proposals', authentication, propostaRoutes); // <-- CORRIGIDO: routes.use e authentication para as rotas de proposta
+routes.use('/proposals', authentication, propostaRoutes);
 
 // Exemplo de rota que só administrador pode acessar (descomente se for usar):
 // routes.get('/admin-dashboard', authentication, authorization, (req, res) => {
